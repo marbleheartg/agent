@@ -1,0 +1,48 @@
+services:
+  app:
+    build: .
+    image: agent-dev
+    container_name: agent-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ~/.ssh/163291:/root/.ssh/163291:ro
+      - ~/.ssh/config:/root/.ssh/config:ro
+      - ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+      - ~/.pi:/root/.pi
+      - ~/.gitconfig:/root/.gitconfig
+
+    tty: true
+    stdin_open: true
+    command: bun run dev
+    networks:
+      - cloudflared
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: restart
+          path: bot
+        - action: restart
+          path: utils
+        - action: restart
+          path: .pi
+        - action: rebuild
+          path: docker-compose.yml
+        - action: rebuild
+          path: Dockerfile
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    environment:
+      TZ: Europe/Amsterdam
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    restart: unless-stopped
+    depends_on:
+      - app
+    command: tunnel --no-autoupdate run
+    networks:
+      - cloudflared
+
+networks:
+  cloudflared:
+    name: cloudflared

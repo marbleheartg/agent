@@ -1,0 +1,15 @@
+{
+  "theme": "dark",
+  "defaultThinkingLevel": "high",
+  "skills": {
+    "enabled": false
+  },
+  "terminal": {
+    "showImages": false
+  },
+  "retry": {
+    "enabled": true,
+    "maxRetries": 3,
+    "baseDelayMs": 2000
+  }
+}

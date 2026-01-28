@@ -1,0 +1,21 @@
+{
+  "name": "agent",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "clear && bun run index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@grammyjs/hydrate": "^1.6.0",
+    "@mariozechner/pi-coding-agent": "^0.50.1",
+    "grammy": "^1.39.3",
+    "markdown-it": "^14.1.0",
+    "sanitize-html": "^2.17.0"
+  }
+}
