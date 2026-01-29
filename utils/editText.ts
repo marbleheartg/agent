@@ -12,8 +12,6 @@ export async function editText(
 ) {
   let finalText = text.length ? text.slice(0, 4000) : "..."
 
-  if (msg.text == finalText) return
-
   switch (format) {
     case "clean":
       break
@@ -27,11 +25,9 @@ export async function editText(
       break
   }
 
-  if (msg.text == finalText) return
+  finalText = `<blockquote expandable><b>${title}</b>\n\n${clean(finalText, format === "code").slice(0, 3500)}</blockquote>`
 
-  finalText = `<blockquote expandable><b>${title}</b>\n\n${clean(finalText, format === "code")}</blockquote>`
-
-  if (msg.text == finalText) return
+  if (msg.text === finalText && msg.reply_markup === reply_markup) return
 
   return msg.editText(finalText, {
     ...msgTextConfig,

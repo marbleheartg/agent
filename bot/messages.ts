@@ -1,6 +1,7 @@
+import type { HydrateFlavor } from "@grammyjs/hydrate"
 import { $, sleep, spawn } from "bun"
 import { readdir } from "fs/promises"
-import { InlineKeyboard } from "grammy"
+import { Context, InlineKeyboard, InputFile, Keyboard } from "grammy"
 import { bot, providers } from "../config"
 import { editText } from "../utils/editText"
 import { log } from "../utils/log"
@@ -8,6 +9,8 @@ import { reply } from "../utils/reply"
 import { updateTime } from "../utils/updateTime"
 
 let model: string
+
+const projects = (await readdir("/app/projects", { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name)
 
 async function agentLoop(state: { text: string }, prompt: string) {
   for (const provider of providers) {
@@ -85,7 +88,43 @@ async function agentLoop(state: { text: string }, prompt: string) {
   throw new Error("all providers error")
 }
 
-export function messages() {
+async function diff(ctx: HydrateFlavor<Context>) {
+  const msg = ctx.msg
+
+  const proj = msg.text
+
+  await $`git add .`.cwd(`/app/projects/${proj}`)
+
+  const gitDiff = await $`git diff --cached`.cwd(`/app/projects/${proj}`).text()
+
+  const kb = new InlineKeyboard().text("✅", `approve:${proj}`).text("❌", `reject:${proj}`)
+
+  await msg.delete()
+
+  await sleep(1000)
+
+  const date = new Date().toISOString().slice(5, 16).replace("T", "_").replace(/:/g, "-")
+
+  await ctx.replyWithDocument(new InputFile(Buffer.from(gitDiff), `${proj}-${date}.diff`))
+
+  await sleep(1000)
+
+  await reply(ctx, "✅ Git Diff", `${gitDiff || "no changes"}`, "code", kb)
+}
+
+export async function messages() {
+  bot.command("start", async (ctx) => {
+    if (ctx.msg.from.id !== Number(Bun.env.ADMIN_ID)) return
+
+    const keyboard = new Keyboard()
+
+    for (const proj of projects) keyboard.text(proj)
+
+    keyboard.resized().persistent().toFlowed(4)
+
+    await reply(ctx, "init success", "", "clean", keyboard)
+  })
+
   bot.command("cmd", async (ctx) => {
     if (ctx.msg.from.id !== Number(Bun.env.ADMIN_ID)) return
 
@@ -108,6 +147,8 @@ export function messages() {
     ;(async () => {
       if (ctx.msg.from.id !== Number(Bun.env.ADMIN_ID)) return
 
+      if (projects.some((proj) => proj === ctx.msg.text)) return await diff(ctx)
+
       let replyToText: string
       const reply_to_message = ctx.msg?.reply_to_message
       if (reply_to_message) replyToText = [reply_to_message?.text?.trim(), reply_to_message?.caption?.trim()].filter(Boolean).join("\n")
@@ -118,25 +159,20 @@ export function messages() {
 
       const startTime = Date.now()
 
-      const msg = await reply(ctx, "🤖", "")
+      const msg = await reply(ctx, "🤖", "", "clean")
 
       const state = { text: "" }
 
       const interval = setInterval(() => updateTime(msg, state.text, startTime).catch(() => {}), 1000)
 
       try {
-        await agentLoop(state, prompt)
+        await agentLoop(state, prompt + ". never add any comments to the code.")
+
         clearInterval(interval)
 
         await sleep(1000)
 
-        const projects = (await readdir("/app/projects", { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name)
-
-        const kb = new InlineKeyboard()
-
-        for (const proj of projects) kb.text(proj, `diff:${proj}`)
-
-        await editText(msg, `✅ ${model} [${Math.floor((Date.now() - startTime) / 1000)}s]`, state.text, "clean", kb.toFlowed(4))
+        await editText(msg, `✅ ${model} [${Math.floor((Date.now() - startTime) / 1000)}s]`, state.text, "clean")
 
         const pingMsg = await reply(ctx, "ping", "")
 
