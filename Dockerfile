@@ -10,6 +10,6 @@ RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 RUN rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+WORKDIR /agent
 
 CMD ["bun", "run", "dev"]

@@ -10,7 +10,7 @@ import { updateTime } from "../utils/updateTime"
 
 let model: string
 
-const projects = (await readdir("/app/projects", { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name)
+const projects = (await readdir("/agent/projects", { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name)
 
 async function agentLoop(state: { text: string }, prompt: string) {
   for (const provider of providers) {
@@ -28,12 +28,12 @@ async function agentLoop(state: { text: string }, prompt: string) {
           "json",
           "--no-session",
           "--extension",
-          "/app/.pi/extensions/index.ts",
+          "/agent/.pi/extensions/index.ts",
           "-p",
           prompt,
         ],
         {
-          cwd: "/app/projects",
+          cwd: "/agent/projects",
         },
       )
 
@@ -93,9 +93,9 @@ async function diff(ctx: HydrateFlavor<Context>) {
 
   const proj = msg.text
 
-  await $`git add .`.cwd(`/app/projects/${proj}`)
+  await $`git add .`.cwd(`/agent/projects/${proj}`)
 
-  const gitDiff = await $`git diff --cached`.cwd(`/app/projects/${proj}`).text()
+  const gitDiff = await $`git diff --cached`.cwd(`/agent/projects/${proj}`).text()
 
   const kb = new InlineKeyboard().text("✅", `approve:${proj}`).text("❌", `reject:${proj}`)
 
@@ -105,7 +105,7 @@ async function diff(ctx: HydrateFlavor<Context>) {
 
   const date = new Date().toISOString().slice(5, 16).replace("T", "_").replace(/:/g, "-")
 
-  await ctx.replyWithDocument(new InputFile(Buffer.from(gitDiff), `${proj}-${date}.diff`))
+  if (gitDiff.length) await ctx.replyWithDocument(new InputFile(Buffer.from(gitDiff), `${proj}-${date}.diff`))
 
   await sleep(1000)
 
@@ -118,9 +118,9 @@ export async function messages() {
 
     const keyboard = new Keyboard()
 
-    for (const proj of projects) keyboard.text(proj)
+    projects.forEach((proj, i) => (i !== 0 && i % 4 === 0 ? keyboard.row().text(proj) : keyboard.text(proj)))
 
-    keyboard.resized().persistent().toFlowed(4)
+    keyboard.resized().persistent()
 
     await reply(ctx, "init success", "", "clean", keyboard)
   })

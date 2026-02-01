@@ -19,13 +19,23 @@ export function callbacks() {
 
         await editText(msg, "⏳ Processing", text, "code")
 
-        await $`git add .`.cwd(`/app/projects/${proj}`)
+        await $`git add .`.cwd(`/agent/projects/${proj}`)
 
-        const gitDiff = await $`git diff --cached`.cwd(`/app/projects/${proj}`).text()
+        const gitDiff = await $`git diff --cached`.cwd(`/agent/projects/${proj}`).text()
 
         if (!gitDiff.length) return await editText(msg, "✅ No Changes", text, "code")
 
         let commitMsg: any
+
+        const prompt = `Reply strictly and only with a concise commit message
+        Format: <type>: <short description>
+        Allowed types: feat, fix, chore, refactor, docs, test, style
+        Rules:
+        - lowercase
+        - no period at the end
+        - max 60 characters
+        - no extra text, no explanations
+        Changes: ${text.slice(0, 3500)}`
 
         async function loop() {
           for (const provider of providers) {
@@ -35,8 +45,8 @@ export function callbacks() {
                --provider ${provider} \
                --no-tools \
                --no-session \
-               -p "Reply strictly and only with a concise commit message for these changes: ${text.slice(0, 3500)}"`
-                .cwd(`/app/projects/${proj}`)
+               -p ${prompt}`
+                .cwd(`/agent/projects/${proj}`)
                 .text()
 
               return
@@ -51,8 +61,8 @@ export function callbacks() {
 
         await loop()
 
-        await $`git commit -m ${commitMsg.trim()}`.cwd(`/app/projects/${proj}`)
-        await $`git push`.cwd(`/app/projects/${proj}`)
+        await $`git commit -m ${commitMsg.trim()}`.cwd(`/agent/projects/${proj}`)
+        await $`git push`.cwd(`/agent/projects/${proj}`)
 
         await editText(msg, "✅ Approved", `${commitMsg.trim()}\n\n${text}`, "code")
       } catch (err) {
@@ -75,8 +85,8 @@ export function callbacks() {
 
       await editText(msg, "⏳ Processing", text, "code")
 
-      await $`git reset --hard HEAD`.cwd(`/app/projects/${proj}`)
-      await $`git clean -fd`.cwd(`/app/projects/${proj}`)
+      await $`git reset --hard HEAD`.cwd(`/agent/projects/${proj}`)
+      await $`git clean -fd`.cwd(`/agent/projects/${proj}`)
       await editText(msg, "✅ Rejected", text, "code")
     } catch (err) {
       await editText(msg, "❌ Error", text, "code")

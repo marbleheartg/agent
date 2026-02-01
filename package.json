@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@grammyjs/hydrate": "^1.6.0",
-    "@mariozechner/pi-coding-agent": "^0.50.3",
+    "@mariozechner/pi-coding-agent": "^0.50.9",
     "grammy": "^1.39.3",
     "markdown-it": "^14.1.0",
     "sanitize-html": "^2.17.0"

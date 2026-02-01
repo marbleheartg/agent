@@ -9,7 +9,7 @@ export default function (pi: ExtensionAPI) {
 
     if (eventInputPath) {
       const normalized = path.posix.normalize(eventInputPath)
-      const allowed = normalized.startsWith("/app/projects/") || normalized.startsWith("projects/")
+      const allowed = normalized.startsWith("/agent/projects/") || normalized.startsWith("projects/")
       if (!allowed || normalized.includes("..")) return { block: true, reason: "only projects folder is allowed" }
     }
   })
